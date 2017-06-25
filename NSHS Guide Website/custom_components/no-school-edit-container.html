@@ -1,0 +1,189 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="authority-check.html">
+<link rel="import" href="../functions/date.html">
+
+<dom-module id="no-school-edit-container">
+	<template>
+		<style>
+			#title
+			{
+				height: 80px;
+			}
+			#title > *
+			{
+				display: inline-block;
+				margin-left: 16px;
+			}
+			span
+			{
+				@apply(--paper-font-headline);
+				color: white;
+				margin-top: 24px;
+			}
+			paper-input
+			{
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+				display: inline-block;
+				text-align: left;
+				margin: 16px;
+			}
+			.dateInput
+			{
+				max-width: 150px;
+			}
+			#doneButton
+			{
+				background-color: var(--accent-color);
+				color: white;
+			}
+			paper-icon-button
+			{
+				color: var(--accent-color);
+			}
+			paper-dialog
+			{
+				--paper-dialog-background-color: white;
+				--paper-dialog-color: black;
+			}
+			#content
+			{
+				margin-top: 16px;
+				width: 100%;
+				color: white;
+				text-align: center;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax id="ajax" url="../ajax/set-no-school.php" handle-as="json" last-response="{{ajaxresponse}}"></iron-ajax>
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<div id="title">
+			<span>No School Editor</span>
+			<paper-button id="doneButton" raised="true" on-click="onDoneButtonClick">Done</paper-button>
+		</div>
+
+		<div id="content">
+			Vacation from
+			<paper-input id="startDateInput" class="dateInput" label="Start date" value="[[stringFromDate(startDate)]]" type="date" always-float-label></paper-input>
+			to
+			<paper-input id="endDateInput" class="dateInput" label="End date" value="[[stringFromDate(endDate)]]" type="date" always-float-label></paper-input>
+		</div>
+
+		<paper-toast id="toast" duration="Infinity">
+			<paper-icon-button icon="clear" onclick="toast.close()"></paper-icon-button>
+		</paper-toast>
+		<paper-dialog id="dialog" entry-animation="fade-in-animation">
+			<h2>Set no school and send out notifications?</h2>
+			<div>
+				The vacation will begin on [[getDateText(startDate)]] and end on [[getDateText(endDate)]]
+			</div>
+			<div class="buttons">
+				<paper-button dialog-dismiss>Cancel</paper-button>
+				<paper-button on-click="onSaveClick" dialog-confirm>Ok</paper-button>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'no-school-edit-container',
+			properties:
+			{
+				authorized:
+				{
+					type:Boolean,
+					observer: "onAuthorizedChanged"
+				},
+				startDate:
+				{
+					type:Date,
+					value:function(){return new Date();}
+				},
+				endDate:
+				{
+					type:Date,
+					value:function(){return new Date();}
+				},
+				ajaxresponse:
+				{
+					type:Object,
+					observer:"onAjaxResponded"
+				}
+			},
+			behaviors: [Date.Behavior],
+			onAuthorizedChanged:function()
+			{
+				if (!this.authorized)
+					location.href = "index.html";
+			},
+			onDoneButtonClick:function()
+			{
+				this.startDate = this.dateFromString(this.$.startDateInput.value);
+				this.endDate = this.dateFromString(this.$.endDateInput.value);
+				this.$.toast.close();
+				this.$.dialog.open();
+			},
+			onSaveClick:function()
+			{
+				this.$.dialog.close();
+
+				if (this.showToastIfInputsInvalid())
+					return;
+
+				this.$.ajax.params = {startDate:this.stringFromDate(this.startDate), endDate:this.stringFromDate(this.endDate)};
+				this.$.ajax.generateRequest();
+			},
+			/**
+			 * Shows a toast if the start/end dates inputted are invalid
+			 * They are invalid if: the vacation ends before it starts, lasts longer than 5 days, or is not in the school year
+			 * @returns {boolean} Whether the dates are invalid
+			 */
+			showToastIfInputsInvalid:function()
+			{
+				if (this.startDate > this.endDate)
+				{
+					this.showToastWithMessage("The vacation ends before it starts");
+					return true;
+				}
+				if (this.daysBetweenDates(this.startDate, this.endDate) > 5)
+				{
+					this.showToastWithMessage("The vacation cannot last longer than 5 days (to minimize accidental input error)");
+					return true;
+				}
+				if (this.dateFromString(this.startOfSchoolYear()) > this.startDate)
+				{
+					this.showToastWithMessage("The vacation starts before the school year starts");
+					return true;
+				}
+				if (this.dateFromString(this.endOfSchoolYear()) < this.endDate)
+				{
+					this.showToastWithMessage("The vacation ends after the school year ends");
+					return true;
+				}
+				return false;
+			},
+			showToastWithMessage:function(message)
+			{
+				this.$.toast.text = message;
+				this.$.toast.open();
+			},
+			onAjaxResponded:function()
+			{
+				if (this.ajaxresponse)
+					location.href = "blocks.html";
+			}
+		});
+	</script>
+</dom-module>

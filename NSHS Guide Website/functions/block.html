@@ -1,0 +1,125 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="time.html">
+<script>
+	/**
+	 *
+	 * @param letter {string} "G"
+	 * @param num {number} 3
+	 * @param startTime {string} "10:50"
+	 * @param endTime {string} "12:35"
+	 * @param isLunch {boolean} Defaults to false
+	 * Optional params:
+	 * @param customBlockName {string} Defaults to "". If this exists, blockLetter = "S"
+	 * @param customLunchTimes {CustomLunchTimes|null} Defaults to null.
+	 * @constructor
+	 */
+	function Block({letter, num, startTime, endTime, isLunch, customBlockName, customLunchTimes})
+	{
+		this.letter = letter;
+		this.num = num;
+		this.startTime = startTime;
+		this.endTime = endTime;
+		this.isLunch = isLunch;
+		this.customBlockName = customBlockName;
+		this.customLunchTimes = customLunchTimes;
+	}
+	/**
+	 *
+	 * @param firstLunchEnd {string} "11:20"
+	 * @param secondLunchStart {string} "11:25"
+	 * @param secondLunchEnd {string} "11:55"
+	 * @param thirdLunchStart {string} "12:05"
+	 * @constructor
+	 */
+	function CustomLunchTimes({firstLunchEnd, secondLunchStart, secondLunchEnd, thirdLunchStart})
+	{
+		this.firstLunchEnd = firstLunchEnd;
+		this.secondLunchStart = secondLunchStart;
+		this.secondLunchEnd = secondLunchEnd;
+		this.thirdLunchStart = thirdLunchStart;
+	}
+	BlockBehavior = {
+		/**
+		 * @param customLunchTimes {CustomLunchTimes}
+		 * @returns {boolean} True if customLunchTimes is null OR doesn't has all lunch time set
+		 */
+		customLunchTimesIsEmpty:function(customLunchTimes)
+		{
+			if (customLunchTimes == null)
+				return true;
+
+			return customLunchTimes.firstLunchEnd == null ||
+					customLunchTimes.secondLunchStart == null ||
+					customLunchTimes.secondLunchEnd == null ||
+					customLunchTimes.thirdLunchStart == null;
+		},
+		/**
+		 * This is what a block looks like after toString():
+		 * letter|num|startTime|endTime|isLunch|customName       (typical block)
+		 * letter|num|startTime|endTime|isLunch|customName|1stLunchEnd|2ndLunchStart|2ndLunchEnd|3rdLunchStart
+		 * @param block {Block}
+		 * @returns {string} Block as string. Note that information about start/end times are not preserved
+		 */
+		blockToString:function(block)
+		{
+			var string = block.letter + "|" + block.num + "|" + block.startTime + "|" + block.endTime + "|" + block.isLunch + "|" + block.customBlockName;
+			if (block.isLunch && !this.customLunchTimesIsEmpty(block.customLunchTimes))
+				string += "|" + block.customLunchTimes.firstLunchEnd + "|" + block.customLunchTimes.secondLunchStart
+						+ "|" + block.customLunchTimes.secondLunchEnd + "|" + block.customLunchTimes.thirdLunchStart;
+			return string;
+		},
+		getDefaultBlock:function()
+		{
+			return new Block({letter:"A", num:1, startTime:"07:40", endTime:"08:35", isLunch:false, customLunchTimes:null, customBlockName:""});
+		},
+		lengthOfBlock:function(block)
+		{
+			const startTime = this.timeFromString(block.startTime);
+			const endTime = this.timeFromString(block.endTime);
+			return this.minutesFromTimeToTime(startTime, endTime);
+		},
+		/**
+		 * Returns number of minutes elapsed between end time of first block & start time of second block
+		 * @param firstBlock {Block} The block which should come first
+		 * @param secondBlock {Block} The block which should come second
+		 * @returns {number} Can be negative if second block starts before first block ends
+		 */
+		timeFromBlockToBlock:function(firstBlock, secondBlock)
+		{
+			const firstBlockEnd = this.timeFromString(firstBlock.endTime);
+			const secondBlockStart = this.timeFromString(secondBlock.startTime);
+			return this.minutesFromTimeToTime(firstBlockEnd, secondBlockStart);
+		},
+		/**
+		 * Checks to see if a block's custom lunch times are logical. They are illogical if they are negative or add up
+		 * to a number exceeding the block's length
+		 * @param block {Block}
+		 * @returns {string} Error message, defaults to "" (empty string)
+		 */
+		getLunchTimesErrorOfBlock:function(block)
+		{
+			if (!block.isLunch || this.customLunchTimesIsEmpty(block.customLunchTimes))
+				return "";
+
+			const times = block.customLunchTimes;
+			const firstLunchStart = this.timeFromString(block.startTime);
+			const firstLunchEnd = this.timeFromString(times.firstLunchEnd);
+			const secondLunchStart = this.timeFromString(times.secondLunchStart);
+			const secondLunchEnd = this.timeFromString(times.secondLunchEnd);
+			const thirdLunchStart = this.timeFromString(times.thirdLunchStart);
+			const thirdLunchEnd = this.timeFromString(block.endTime);
+			if (this.minutesFromTimeToTime(firstLunchStart, firstLunchEnd) < 0)
+				return "First lunch ends before it begins";
+			if (this.minutesFromTimeToTime(firstLunchEnd, secondLunchStart) < 0)
+				return "Second lunch begins before first lunch ends";
+			if (this.minutesFromTimeToTime(secondLunchStart, secondLunchEnd) < 0)
+				return "Second lunch ends before it begins";
+			if (this.minutesFromTimeToTime(secondLunchEnd, thirdLunchStart) < 0)
+				return "Third lunch begins before second lunch ends";
+			if (this.minutesFromTimeToTime(thirdLunchStart, thirdLunchEnd) < 0)
+				return "Third lunch begins after block ends";
+			return "";
+		}
+	};
+	Block.Behavior = [BlockBehavior, Time.Behavior];
+</script>

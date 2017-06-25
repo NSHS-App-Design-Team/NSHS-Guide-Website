@@ -1,0 +1,131 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="authority-check.html">
+<link rel="import" href="blocks-container.html">
+<link rel="import" href="../functions/date.html">
+
+<dom-module id="revert-days-edit-container">
+	<template>
+		<style>
+			#title > *
+			{
+				display: inline-block;
+				margin-left: 16px;
+			}
+			span
+			{
+				@apply(--paper-font-headline);
+				color: white;
+			}
+			paper-input
+			{
+				text-align: left;
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+			}
+			#dateInput
+			{
+				max-width: 150px;
+			}
+			#doneButton
+			{
+				background-color: var(--accent-color);
+				color: white;
+			}
+			paper-icon-button
+			{
+				color: var(--accent-color);
+			}
+			paper-dialog
+			{
+				--paper-dialog-background-color: white;
+				--paper-dialog-color: black;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax id="ajax" url="../ajax/revert-special-schedule.php" handle-as="json" last-response="{{ajaxresponse}}"></iron-ajax>
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<div id="title">
+			<span>Revert Special Schedule for</span>
+			<paper-input id="dateInput" type="date" value="[[stringFromDate(date)]]" on-change="onDateInputChanged" error-message="Date is out of range" min="[[startOfSchoolYear()]]" max="[[endOfSchoolYear()]]" always-float-label></paper-input>
+			<paper-button id="doneButton" raised="true" onclick="dialog.open()">Revert</paper-button>
+		</div>
+
+		<blocks-container date="[[date]]" title="Schedule on [[getDateText(date)]]"></blocks-container>
+		<blocks-container date="[[getDateWithRegularSchedule(date)]]" title="Regular schedule on [[getDayOfWeekFromDate(date)]]s"></blocks-container>
+
+		<paper-dialog id="dialog" entry-animation="fade-in-animation">
+			<h2>Revert the special schedule and send out notifications?</h2>
+			<div>
+				[[getDateText(date)]] will follow the normal block schedule
+			</div>
+			<div class="buttons">
+				<paper-button dialog-dismiss>Cancel</paper-button>
+				<paper-button on-click="onSaveClicked" dialog-confirm>Ok</paper-button>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'revert-days-edit-container',
+			properties:
+			{
+				authorized:
+				{
+					type:Boolean,
+					observer: "onAuthorizedChanged"
+				},
+				date:
+				{
+					type:Date,
+					value:function(){return new Date();}
+				},
+				ajaxresponse:
+				{
+					type:Object,
+					observer:"onAjaxResponded"
+				}
+			},
+			behaviors: [Date.Behavior],
+			onAuthorizedChanged:function()
+			{
+				if (!this.authorized)
+					location.href = "index.html";
+			},
+			onDateInputChanged:function(event)
+			{
+				var dateString = event.target.value;
+				var isCorrect = event.target.validate();    //validate the paper-input
+				if (isCorrect)
+					this.set("date", this.dateFromString(dateString));
+			},
+			getDateWithRegularSchedule:function(date)
+			{
+				var regularScheduleDate = new Date(0);  //go to beginning of Epoch time, where no special schedules exist
+				const dayOfWeekDifference = date.getDay() - regularScheduleDate.getDay();
+				regularScheduleDate.setDate(regularScheduleDate.getDate() + dayOfWeekDifference + 7);
+				return regularScheduleDate;
+			},
+			onSaveClicked:function()
+			{
+				this.$.dialog.close();
+
+				this.$.ajax.params = {date:this.stringFromDate(this.date)};
+				this.$.ajax.generateRequest();
+			},
+			onAjaxResponded:function()
+			{
+				if (this.ajaxresponse)
+					location.href = "blocks.html";
+			}
+		});
+	</script>
+</dom-module>

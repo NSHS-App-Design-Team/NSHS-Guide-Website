@@ -1,0 +1,120 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../functions/time.html">
+<link rel="import" href="../functions/block.html">
+<link rel="import" href="block-image.html">
+
+<dom-module id="block-image-with-time">
+	<template>
+		<style>
+			block-image
+			{
+				margin: auto;
+			}
+			#time
+			{
+				display: block;
+				@apply(--paper-font-title);
+				font-weight: normal !important;
+				color: white;
+				text-align: center;
+				margin-top: 16px;
+			}
+			#lunchTimesContainer, #lunchTimesContainer > div
+			{
+				display: block;
+				@apply(--paper-font-subhead);
+				font-weight: normal !important;
+				color: white;
+				text-align: center;
+				margin-top: 8px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<block-image floating="[[floating]]" disabled="true" blockletter="[[block.letter]]" blocknum="[[block.num]]" size="[[sizeOfBlock(block)]]"></block-image>
+		<div id="time">[[timeStringOfBlock(block)]]</div>
+		<div id="lunchTimesContainer" hidden$="[[!block.isLunch]]">
+			Lunches
+			<div>[[firstLunchOfBlock(block)]]</div>
+			<div>[[secondLunchOfBlock(block)]]</div>
+			<div>[[thirdLunchOfBlock(block)]]</div>
+		</div>
+	</template>
+	<script>
+		const STANDARD_BLOCK_IMAGE_SIZE = 100;
+		const MIN_BLOCK_IMAGE_SIZE = 70;
+
+		Polymer
+		({
+			is: 'block-image-with-time',
+			behaviors: [Time.Behavior, Block.Behavior],
+			properties:
+			{
+				block:
+				{
+					type:Block,
+					notify:true
+				},
+				floating:
+				{
+					type:Boolean,
+					value:false
+				}
+			},
+			sizeOfBlock:function(block)
+			{
+				const size = this.lengthOfBlock(block) / 55 * STANDARD_BLOCK_IMAGE_SIZE;
+
+				//too short, reduce text size
+				if (size < MIN_BLOCK_IMAGE_SIZE)
+					return MIN_BLOCK_IMAGE_SIZE;
+				return size;
+			},
+			firstLunchOfBlock:function(block)
+			{
+				if (this.customLunchTimesIsEmpty(block.customLunchTimes))
+				{
+					const startTime = this.timeFromString(block.startTime);
+					const lunchEndTime = this.addMinutesToTime(30, startTime);
+					const lunchEndString = this.timeToString(lunchEndTime);
+					return block.startTime + " ~ " + lunchEndString;
+				}
+				else
+				{
+					return block.startTime + " ~ " + block.customLunchTimes.firstLunchEnd;
+				}
+			},
+			secondLunchOfBlock:function(block)
+			{
+				if (this.customLunchTimesIsEmpty(block.customLunchTimes))
+				{
+					const startTime = this.timeFromString(block.startTime);
+					const lunchStartTime = this.addMinutesToTime(35, startTime);
+					const lunchEndTime = this.addMinutesToTime(30, lunchStartTime);
+					const lunchStartString = this.timeToString(lunchStartTime);
+					const lunchEndString = this.timeToString(lunchEndTime);
+					return lunchStartString + " ~ " + lunchEndString;
+				}
+				else
+				{
+					return block.customLunchTimes.secondLunchStart + " ~ " + block.customLunchTimes.secondLunchEnd;
+				}
+			},
+			thirdLunchOfBlock:function(block)
+			{
+				if (this.customLunchTimesIsEmpty(block.customLunchTimes))
+				{
+					const endTime = this.timeFromString(block.endTime);
+					const lunchStartTime = this.addMinutesToTime(-30, endTime);
+					const lunchStartString = this.timeToString(lunchStartTime);
+					return lunchStartString + " ~ " + block.endTime;
+				}
+				else
+				{
+					return block.customLunchTimes.thirdLunchStart + " ~ " + block.endTime;
+				}
+			}
+		});
+	</script>
+</dom-module>

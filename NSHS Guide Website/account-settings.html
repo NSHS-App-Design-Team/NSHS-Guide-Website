@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+	<link rel='shortcut icon' type='image/x-icon' href='img/favicon.ico' />
+	<link rel="import" href="bower_components/paper-styles/paper-styles.html">
+	<link rel="import" href="custom_components/nav-bar.html">
+	<link rel="import" href="custom_components/account-settings-container.html">
+	<link rel="stylesheet" href="style.css">
+	<title>Account Settings</title>
+	<style is="custom-style">
+		#index-logo
+		{
+			background-repeat: no-repeat;
+			background-position: center;
+			background-image: url('img/Feature-image-banner-no-text.png');
+			background-size: cover;
+			background-color: var(--default-primary-color);
+			height: 100vh;
+			width: auto;
+		}
+	</style>
+</head>
+<body>
+<div id="index-logo">
+	<nav-bar></nav-bar>
+	<div style="clear: both"></div>
+	<div style="margin-right: 16%; margin-top: 10%">
+		<account-settings-container></account-settings-container>
+	</div>
+</div>
+</body>
+</html>

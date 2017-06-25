@@ -1,0 +1,124 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-ripple/paper-ripple.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../functions/block-color.html">
+
+<dom-module id="block-image">
+	<template>
+		<style>
+			:host
+			{
+				--size: 40px;
+				--bg-color: #90A4AE;
+
+				display: block;
+				position: relative;
+				outline: none;
+				user-select: none;
+				-moz-user-select: none;
+				-ms-user-select: none;
+				-webkit-user-select: none;
+				cursor: pointer;
+
+				border-radius: 100%;
+				color: white;
+				text-align: center;
+
+				@apply(--paper-font-common-base);
+				font-weight: 400;
+
+				width: var(--size);
+				height: var(--size);
+				line-height: var(--size);
+				font-size: calc(var(--size) / 2);
+				background-color: var(--bg-color);
+			}
+			#blockNum
+			{
+				font-size: calc(var(--size) / 6);
+			}
+			:host([disabled])
+			{
+				pointer-events: none;
+			}
+			:host([floating])
+			{
+				box-shadow: 0 8px 10px 1px rgba(0, 0, 0, 0.14),
+							0 3px 14px 2px rgba(0, 0, 0, 0.12),
+							0 5px 5px -3px rgba(0, 0, 0, 0.4);
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		[[blockletter]]<span id="blockNum">[[blocknum]]</span>
+		<paper-ripple></paper-ripple>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'block-image',
+			behaviors: [BlockColor.Behavior],
+			listeners: {"click": "onClick"},
+			properties:
+			{
+				blockletter:
+				{
+					type:String,
+					value:"A",
+					observer:"recolor",
+					notify:true
+				},
+				blocknum:
+				{
+					type:Number
+				},
+				size:
+				{
+					type:Number,
+					value:40,
+					observer:"resize"
+				},
+				disabled:
+				{
+					type:Boolean,
+					reflectToAttribute:true
+				},
+				faded:
+				{
+					type:Boolean,
+					value:false,
+					observer:"recolor"
+				},
+				floating:
+				{
+					type:Boolean,
+					value:false,
+					reflectToAttribute:true
+				}
+			},
+			onClick:function()
+			{
+				if (!this.faded)
+					return;
+				if (this.disabled)
+					return;
+				this.set("faded", false);
+			},
+			recolor:function()
+			{
+				var color = "";
+				if (this.faded)
+					color = this.fadedBgForLetter(this.blockletter);
+				else
+					color = this.normalBgForLetter(this.blockletter);
+				this.customStyle["--bg-color"] = color;
+				this.updateStyles();
+			},
+			resize:function()
+			{
+				this.customStyle["--size"] = this.size + "px";
+				this.updateStyles();
+			}
+		});
+	</script>
+</dom-module>

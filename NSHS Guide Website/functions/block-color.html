@@ -1,0 +1,64 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<script>
+	var BlockColor = BlockColor || {};
+	BlockColor.Behavior = {
+		/**
+		 * Returns style containing normal background color for block letter
+		 * @param {string} blockLetter
+		 * @return {string} Color in hex code
+		 */
+		normalBgForLetter:function(blockLetter)
+		{
+			switch (blockLetter)
+			{
+				case "A":
+					return "#f16033"; //red
+				case "B":
+					return "#f06292"; //pink
+				case "C":
+					return "#ba68c8"; //purple
+				case "D":
+					return "#42a5f5"; //blue
+				case "E":
+					return "#00bcd4"; //cyan
+				case "F":
+					return "#26a69a"; //teal
+				case "G":
+					return "#8bc34a"; //lightGreen
+				case "HR":
+					return "#ffd54f"; //amber
+				case "J":
+					return "#ffab40"; //orange
+			}
+		},
+		/**
+		 * Returns style containing faded background color for block letter
+		 * @param {string} blockLetter
+		 * @return {string} Color in hex code
+		 */
+		fadedBgForLetter:function(blockLetter)
+		{
+			switch (blockLetter)
+			{
+				case "A":
+					return "#ffebee"; //red
+				case "B":
+					return "#f3e5f5"; //pink
+				case "C":
+					return "#f3e5f5"; //purple
+				case "D":
+					return "#e3f2fd"; //blue
+				case "E":
+					return "#e0f7fa"; //cyan
+				case "F":
+					return "#e0f2f1"; //teal
+				case "G":
+					return "#f1f8e9"; //lightGreen
+				case "HR":
+					return "#fbf4de"; //amber
+				case "J":
+					return "#fbe9e7"; //orange
+			}
+		}
+	};
+</script>

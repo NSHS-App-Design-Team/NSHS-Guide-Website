@@ -1,0 +1,75 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tabs.html">
+<link rel="import" href="../bower_components/paper-tabs/paper-tab.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../functions/date.html">
+
+<dom-module id="date-picker">
+	<template>
+		<style is="custom-style">
+			:host
+			{
+				--paper-tab-ink: var(--light-primary-color);
+			}
+			.dateTab
+			{
+				color: white;
+			}
+			.dateTab.iron-selected
+			{
+				color: var(--accent-color);
+			}
+			paper-tabs
+			{
+				--paper-tabs-selection-bar-color: var(--accent-color);
+			}
+		</style>
+		<paper-tabs selected="{{selectedindex}}">
+			<template is="dom-repeat" items="[[dates]]" as="date">
+				<paper-tab class="dateTab">[[getDateText(date)]]</paper-tab>
+			</template>
+		</paper-tabs>
+	</template>
+	<script>
+		var today = new Date();
+
+		Polymer({
+			is: 'date-picker',
+			properties:
+			{
+				selecteddate:
+				{
+					type: Date,
+					computed: "getSelectedDate(selectedindex, dates)",
+					notify: true
+				},
+				selectedindex:
+				{
+					type: Number,
+					value: 0
+				},
+				dates:
+				{
+					type: Array,
+					value: function() {return [];}
+				}
+			},
+			behaviors: [Date.Behavior],
+			ready:function()
+			{
+				this.push('dates', today);
+				for (var i = 1; i < 7; i++)
+				{
+					var newDate = new Date(today.getTime());
+					newDate.setDate(today.getDate() + i);
+					this.push('dates', newDate);
+				}
+			},
+			getSelectedDate:function(selectedindex, dates)
+			{
+				return dates[selectedindex];
+			}
+		});
+	</script>
+</dom-module>

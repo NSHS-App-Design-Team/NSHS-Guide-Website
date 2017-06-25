@@ -1,0 +1,158 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="authority-check.html">
+<link rel="import" href="../functions/date.html">
+
+<dom-module id="announcement-container">
+	<template>
+		<style>
+			:host
+			{
+				--announcement-width: calc(100% - 214px);
+
+				position: fixed;
+				bottom: 0;
+				background-color: var(--dark-primary-color);
+				box-shadow: 0 -8px 10px 1px rgba(0, 0, 0, 0.08),
+							0 3px 14px 2px rgba(0, 0, 0, 0.12),
+							0 5px 5px -3px rgba(0, 0, 0, 0.4);
+				width: 80%;
+				left: 10%;
+				padding: 0 16px 16px 16px;
+			}
+			:host([hidden])
+			{
+				display: none;
+			}
+			paper-input
+			{
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-input-color: white;
+
+				display: inline-block;
+			}
+			#dateInput
+			{
+				width: 150px;
+				margin-right: 16px;
+			}
+			#announcementInput
+			{
+				width: var(--announcement-width);
+			}
+			paper-icon-button
+			{
+				color: white;
+			}
+			paper-dialog
+			{
+				--paper-dialog-background-color: white;
+				--paper-dialog-color: black;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<iron-ajax id="ajaxGet" url="../ajax/get-announcement.php" handle-as="json" last-response="{{ajaxresponse}}"></iron-ajax>
+		<iron-ajax id="ajaxSet" url="../ajax/set-announcement.php" handle-as="json"></iron-ajax>
+
+		<paper-input hidden="[[!authorized]]" id="dateInput" label="End date" type="date" always-float-label="true" value="[[stringFromDate(today)]]" min="[[stringFromDate(today)]]" error-message="Date is in the past" auto-validate></paper-input>
+		<paper-input disabled="[[!authorized]]" id="announcementInput" label="Announcement" value="{{announcement}}" error-message="This field is required" required auto-validate></paper-input>
+		<paper-icon-button hidden="[[!authorized]]" icon="send" onclick="dialog.open()"></paper-icon-button>
+		<paper-dialog id="dialog" entry-animation="fade-in-animation">
+			<h2>Save the announcement and send out notifications?</h2>
+			<div>
+				Announcement: [[announcement]]
+			</div>
+			<div class="buttons">
+				<paper-button dialog-dismiss>Cancel</paper-button>
+				<paper-button on-click="onSaveClicked" dialog-confirm>Ok</paper-button>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'announcement-container',
+			properties:
+			{
+				animationConfig:
+				{
+					type: Object,
+					value: function() {return {'entry': [{name: 'slide-from-bottom-animation', node: this, timing:{duration:900}}]};}
+				},
+				today:
+				{
+					type:Date,
+					value:function(){return new Date()}
+				},
+				ajaxresponse:
+				{
+					type:Object,
+					observer:"onAjaxResponded"
+				},
+				authorized:
+				{
+					type:Boolean,
+					reflectToAttribute:true,
+					observer:"onAuthorizedChanged"
+				},
+				hidden:
+				{
+					type:Boolean,
+					reflectToAttribute:true,
+					value:true
+				}
+			},
+			behaviors: [Polymer.NeonAnimatableBehavior, Polymer.NeonAnimationRunnerBehavior, Date.Behavior],
+			onSaveClicked:function()
+			{
+				if (!this.$.dateInput.validate())
+					return;
+				if (!this.$.announcementInput.validate())
+					return;
+				const endDate = this.dateFromString(this.$.dateInput.value);
+				const endEpoch = endDate.getTime() / 1000;
+				this.$.ajaxSet.params = {endEpoch: endEpoch, info: this.announcement};
+				this.$.ajaxSet.generateRequest();
+			},
+			onAuthorizedChanged:function()
+			{
+				this.$.ajaxGet.generateRequest();
+			},
+			onAjaxResponded:function()
+			{
+				if ((this.ajaxresponse == null || this.ajaxresponse.info == null) && !this.authorized)
+					return;
+
+				this.set("hidden", false);
+				this.playAnimation('entry');
+				if (this.ajaxresponse == null || this.ajaxresponse.info == null)
+					return;
+
+				//fill in data from current announcement
+				this.set("announcement", this.ajaxresponse.info);
+				if (this.authorized)
+				{
+					const endDate = new Date(this.ajaxresponse.endEpoch * 1000);
+					this.$.dateInput.value = this.stringFromDate(endDate);
+				}
+				else
+				{
+					this.customStyle["--announcement-width"] = "100%";
+					this.updateStyles();
+				}
+			}
+		});
+	</script>
+</dom-module>

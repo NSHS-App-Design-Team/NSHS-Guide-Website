@@ -1,0 +1,227 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../bower_components/neon-animation/animations/fade-in-animation.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="authority-check.html">
+
+<dom-module id="faculty-container">
+	<template>
+		<style is="custom-style">
+			#host
+			{
+				margin-top: 16px;
+				margin-left: 16px;
+				margin-bottom: 16px;
+				font-size:0;    /*gets rid of whitespace between divs that create extra spacing*/
+			}
+			.title
+			{
+				@apply(--paper-font-display1);
+				margin: 16px;
+				text-align: center;
+				color: white;
+			}
+			.tableRow
+			{
+				padding: 8px;
+				margin-right: 16px;
+				width: calc(50% - 32px);
+				background-color: #f1f1f1;
+				display: inline-block;
+			}
+			.tableRow > *
+			{
+				display: inline-block;
+				vertical-align: top;
+			}
+			.teacherImage
+			{
+				border-radius: 100%;
+				height: 40px;
+				width: 40px;
+				margin-left: 8px;
+			}
+			.teacherName
+			{
+				color: black;
+				text-wrap: normal;
+				opacity: var(--light-primary-opacity);
+				font-size: 20px;
+				margin-left: 16px;
+				line-height: 40px;
+			}
+			paper-icon-button
+			{
+				float: right;
+				color: grey;
+				--paper-icon-button-ink-color: var(--secondary-text-color);
+			}
+			paper-dialog
+			{
+				--paper-dialog-background-color: white;
+				--paper-dialog-color: black;
+			}
+			paper-input
+			{
+				--paper-input-container-color: var(--light-theme-secondary-color);
+				--paper-input-container-focus-color: var(--accent-color);
+				--paper-input-container-input-color: var(--light-theme-text-color);
+
+				display: inline-block;
+			}
+			paper-fab
+			{
+				position: fixed;
+				bottom: 16px;
+				right: 16px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax id="getAjax" auto url="../ajax/get-faculty-array.php" handle-as="json" last-response="{{teachers}}"></iron-ajax>
+		<iron-ajax id="setAjax" url="../ajax/set-faculty.php" handle-as="json" last-response="{{ajaxresponse}}"></iron-ajax>
+		<iron-ajax auto url="../ajax/get-teacher-requests.php" handle-as="json" last-response="{{teacherrequests}}"></iron-ajax>
+		<iron-ajax id="deleteTeacherRequest" url="../ajax/delete-teacher-request.php"></iron-ajax>
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<div id="host">
+			<div hidden="[[!authorized]]">
+				<div class="title">Teacher Requests</div>
+				<template is="dom-repeat" items="[[teacherrequests]]" as="teacherrequest">
+					<div class="tableRow">
+						<img class="teacherImage" src="../img/teacher-image.jpg"/>
+						<div class="teacherName">[[teacherrequest.lastName]], [[teacherrequest.firstName]]</div>
+						<paper-icon-button icon="delete" on-click="onDeleteClick"></paper-icon-button>
+						<paper-icon-button icon="check" on-click="onCheckClick"></paper-icon-button>
+					</div>
+				</template>
+				<div class="title">Faculty List</div>
+			</div>
+			<template is="dom-repeat" items="[[teachers]]" as="teacher">
+				<div class="tableRow">
+					<img class="teacherImage" src="../img/teacher-image.jpg"/>
+					<div class="teacherName">[[teacher.lastName]], [[teacher.firstName]]</div>
+					<paper-icon-button hidden="[[!authorized]]" icon="delete" on-click="onDeleteClick"></paper-icon-button>
+					<paper-icon-button hidden="[[!authorized]]" icon="image:edit" on-click="onEditClick"></paper-icon-button>
+				</div>
+			</template>
+			<paper-fab icon="add" hidden="[[!authorized]]" on-click="onAddClick"></paper-fab>
+
+			<paper-dialog id="dialog" entry-animation="fade-in-animation">
+				<h2>[[dialogTitle]]</h2>
+				<paper-input id="firstNameInput" label="First name" value="[[selectedTeacher.firstName]]" autofocus></paper-input>
+				<paper-input id="lastNameInput" label="Last name" value="[[selectedTeacher.lastName]]"></paper-input>
+				<div class="buttons">
+					<paper-button dialog-dismiss>Cancel</paper-button>
+					<paper-button on-click="onSaveClick" dialog-confirm>Ok</paper-button>
+				</div>
+			</paper-dialog>
+			<!-- listen for enter click -->
+			<iron-a11y-keys keys="enter" on-keys-pressed="onEnterKeyPressed"></iron-a11y-keys>
+		</div>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'faculty-container',
+			properties:
+			{
+				authorized:
+				{
+					type:Boolean,
+					value:false
+				},
+				teachers: Array,
+				selectedTeacher: Object,
+				ajaxresponse:
+				{
+					observer:"onAjaxResponded"
+				}
+			},
+			onDeleteClick:function(event)
+			{
+				if (event.model.teacher != undefined)
+				{
+					this.set("selectedTeacher", event.model.teacher);
+					this.set("dialogTitle", "Delete this teacher?");
+					this.$.dialog.open();
+				}
+				else if (event.model.teacherrequest != undefined)
+				{
+					var index = event.model.index;
+					this.removeTeacherRequestAtIndex(index);
+					this.sendTeacherRequestApproved(event.model.teacherrequest, false);
+				}
+			},
+			onEditClick:function(event)
+			{
+				this.set("selectedTeacher", event.model.teacher);
+				this.set("dialogTitle", "Edit teacher");
+				this.$.dialog.open();
+			},
+			onCheckClick:function(event)
+			{
+				var index = event.model.index;
+				this.removeTeacherRequestAtIndex(index);
+				this.sendTeacherRequestApproved(event.model.teacherrequest, true);
+			},
+			onAddClick:function()
+			{
+				this.set("selectedTeacher", null);
+				this.set("dialogTitle", "Add teacher");
+				this.$.dialog.open();
+			},
+			onSaveClick:function()
+			{
+				var newFirstName = this.$.firstNameInput.value;
+				var newLastName = this.$.lastNameInput.value;
+				var oldFirstName = null;
+				var oldLastName = null;
+				if (this.selectedTeacher != null)
+				{
+					oldFirstName = this.selectedTeacher.firstName;
+					oldLastName = this.selectedTeacher.lastName;
+					if (newFirstName == oldFirstName && newLastName == oldLastName)
+					{
+						newFirstName = null;
+						newLastName = null;
+					}
+				}
+				this.$.setAjax.params = {firstNameToAdd:newFirstName, lastNameToAdd:newLastName,
+										firstNameToDelete:oldFirstName, lastNameToDelete:oldLastName};
+				this.$.setAjax.generateRequest();
+			},
+			onAjaxResponded:function()
+			{
+				console.log("getting new request");
+				this.$.getAjax.generateRequest();
+			},
+			onEnterKeyPressed:function()
+			{
+				if (this.$.dialog.opened)
+				{
+					this.onSaveClick();
+					this.$.dialog.close();
+				}
+			},
+			removeTeacherRequestAtIndex:function(index)
+			{
+				this.splice("teacherrequests", index, 1);
+			},
+			sendTeacherRequestApproved:function(teacherrequest, approved)
+			{
+				this.$.deleteTeacherRequest.params = {firstName:teacherrequest.firstName, lastName:teacherrequest.lastName,
+					regID:teacherrequest.regID, platform:teacherrequest.platform, approved:approved};
+				this.$.deleteTeacherRequest.generateRequest();
+			}
+		});
+	</script>
+</dom-module>

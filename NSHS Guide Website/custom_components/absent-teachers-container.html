@@ -1,0 +1,167 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-material/paper-material.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="block-image.html">
+<link rel="import" href="../functions/block-color.html">
+
+<dom-module id="absent-teachers-container">
+	<template>
+		<style is="custom-style">
+			#host
+			{
+				margin: 16px;
+			}
+			#title
+			{
+				@apply(--paper-font-headline);
+				text-align: center;
+				color: white;
+				margin-bottom: 16px;
+			}
+			table
+			{
+				background-color: #f1f1f1;
+				width: 100%;
+			}
+			.teacherImage
+			{
+				border-radius: 100%;
+				height: 40px;
+				width: 40px;
+				margin-left: 8px;
+			}
+			.teacherName, .info
+			{
+				color: black;
+				text-wrap: normal;
+			}
+			.teacherName
+			{
+				opacity: var(--light-primary-opacity);
+				font-size: 20px;
+			}
+			block-image
+			{
+				display: inline-block;
+				margin-left: 8px;
+			}
+			.info
+			{
+				opacity: var(--light-secondary-opacity);
+				font-size: 16px;
+			}
+			#noAbsentTeachersContainer
+			{
+				text-align: center;
+				background-color: white;
+				border-radius: 100%;
+				width: 400px;
+				height: 400px;
+				margin: 16px auto auto;
+				box-shadow: inset 0 0 2px rgba(0,0,0,.12),inset 0 2px 4px rgba(0,0,0,.24);
+			}
+			#noAbsentTeachersText
+			{
+				@apply(--paper-font-headline);
+				margin-top: 16px;
+			}
+			#noAbsentTeachersImg
+			{
+				height: 120px;
+				width: auto;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/absent-teachers-array.php" handle-as="json" last-response="{{absentteachers}}"></iron-ajax>
+		<iron-ajax auto url="../ajax/blocks-of-day.php" handle-as="json" last-response="{{blocksofday}}"></iron-ajax>
+		<div id="host">
+			<div id="title">[[date]] Teacher Absences</div>
+			<paper-material elevation="3">
+				<table cellspacing="8px">
+					<template is="dom-repeat" items="[[absentteachers]]" as="teacher">
+						<tr>
+							<td><img class="teacherImage" src="../img/teacher-image.jpg"/></td>
+							<td class="teacherName">[[getTeacherName(teacher)]]</td>
+							<td>
+								<template is="dom-repeat" items="[[blocksofday]]" as="block">
+									<block-image disabled="true" faded="[[fadedForLetterAndTeacher(block.letter, teacher)]]" blockletter="[[block.letter]]"></block-image>
+								</template>
+							</td>
+							<td hidden$="[[teacherHasInfo(teacher)]]" class="info">[[getTeacherInfo(teacher)]]</td>
+						</tr>
+					</template>
+				</table>
+			</paper-material>
+			<!-- EMPTY STATE -->
+			<div id="noAbsentTeachersContainer" hidden$="[[hideEmptyState(absentteachers)]]">
+				<div style="position: relative; top: 30%;">
+					<img id="noAbsentTeachersImg" src="../img/empty-state-no-absent-teacher.svg">
+					<div id="noAbsentTeachersText">No absent teachers found</div>
+				</div>
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'absent-teachers-container',
+			properties:
+			{
+				date: String,
+				blocksofday: Array,
+				absentteachers: Array
+			},
+			ready:function()
+			{
+				var date = new Date();
+				this.set("date", (date.getMonth() + 1) + "/" + date.getDate());
+			},
+			/**
+			 * Returns teacher's name in format "LastName, FirstName"
+			 * @param {string} teacherString Teachers like this: "LastName, FirstName|011100011|Remaining Info"
+			 */
+			getTeacherName:function(teacherString)
+			{
+				return teacherString.split("|")[0];
+			},
+			/**
+			 * Returns teacher's info
+			 * @param {string} teacherString Teachers like this: "LastName, FirstName|011100011|Remaining Info"
+			 * @returns {string} Teacher's info
+			 */
+			getTeacherInfo:function(teacherString)
+			{
+				return teacherString.split("|")[2];
+			},
+			/**
+			 * Returns whether this teacher contains info
+			 * @param {string} teacherString Teachers like this: "LastName, FirstName|011100011|Remaining Info"
+			 * @returns {boolean} Whether this teacher contains info
+			 */
+			teacherHasInfo:function(teacherString)
+			{
+				return this.getTeacherInfo(teacherString) == null;
+			},
+			/**
+			 * Returns whether the blockImage should be faded, based on the blockLetter we're checking and the teacher's info
+			 * @param {string} blockLetter Block letter, ranges from A~G, also includes HR & J
+			 * @param {string} teacherString Teachers like this: "LastName, FirstName|011100011|Remaining Info"
+			 * @return {boolean} Whether the blockImage should be faded
+			 */
+			fadedForLetterAndTeacher:function(blockLetter, teacherString)
+			{
+				var blockLetters = ["A", "B", "C", "D", "E", "F", "G", "HR", "J"];
+				var absenceInfo = teacherString.split("|")[1].split('');
+				var indexOfBlock = blockLetters.indexOf(blockLetter);
+				var absentForBlock = absenceInfo[indexOfBlock];
+				return absentForBlock != "1";
+			},
+			hideEmptyState:function(absentTeachers)
+			{
+				return absentTeachers.length != 0;
+			}
+		});
+	</script>
+</dom-module>

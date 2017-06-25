@@ -1,0 +1,176 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<script src="../functions/sha512.js"></script>
+
+<dom-module id="login-container">
+	<template>
+		<style>
+			:host
+			{
+				float: right;
+				width: 25%;
+				color: white;
+				text-align: center;
+			}
+			#login-text
+			{
+				@apply(--paper-font-headline);
+				opacity: var(--light-primary-opacity);
+			}
+			#infoText
+			{
+				@apply(--paper-font-body2);
+				opacity: var(--light-primary-opacity);
+				color: var(--accent-color);
+			}
+			paper-input
+			{
+				width: 100%;
+				float: right;
+				clear: both;
+				text-align: left;
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+			}
+			paper-button
+			{
+				margin-top: 32px;
+				color: white;
+			}
+			#loginButton
+			{
+				background: white;
+				color: var(--default-primary-color);
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/user-info.php" handle-as="json" last-response="{{userinfo}}"></iron-ajax>
+		<div id="login-text">NSHS Guide</div>
+		<div id="infoText" hidden$="{{hideinfo}}"></div>
+		<form is="iron-form" method="post" on-iron-form-response="formResponse" id="form">
+			<paper-input label="Email" name="email" error-message="Please enter your email address" required></paper-input>
+			<paper-input label="Password" name="password" type="password" value="{{password}}" error-message="Please enter your password" required></paper-input>
+		</form>
+		<paper-input hidden$="{{hidepasswordcheck}}" label="Confirm Password" id="passwordCheck" type="password" value="{{passwordcheck}}" error-message="Please enter your password again"></paper-input>
+		<paper-button id="loginButton" on-click="onLoginClick" raised>Login</paper-button>
+		<paper-button on-click="onSignUpClick">Sign up</paper-button>
+		<a href="../lol.html">
+			<paper-button on-click="onForgotPasswordClick">Forgot Password</paper-button>
+		</a>
+		<!-- listen for enter click -->
+		<iron-a11y-keys keys="enter" on-keys-pressed="onEnterKeyPressed"></iron-a11y-keys>
+	</template>
+	<script>
+		Polymer({
+			is: 'login-container',
+			properties:
+			{
+				hideinfo:
+				{
+					type:Boolean,
+					value:true
+				},
+				hidepasswordcheck:
+				{
+					type:Boolean,
+					value:true
+				},
+				userinfo:
+				{
+					observer:"onUserInfoChanged"
+				}
+			},
+			//if the user is already logged in, go back to the index page
+			onUserInfoChanged:function()
+			{
+				if (this.userinfo.loggedIn)
+					location.href = "index.html";
+			},
+			formResponse:function(event)
+			{
+				var success = event.detail.response;
+				if (success)
+				{
+					//redirect to home page
+					location.href = "index.html";
+					return;
+				}
+
+				//if passwordCheck is hidden, the user tried to log in; otherwise, they tried to sign up
+				if (this.hidepasswordcheck)
+				{
+					this.set("password", "");
+					this.set("hideinfo", false);
+					this.$.infoText.textContent = "Login failed. Please make sure your email and password are correct and that you haven't" +
+							"attempted more than 10 logins in the past 2 hours.";
+				}
+				else
+				{
+					this.set("password", "");
+					this.set("passwordcheck", "");
+					this.set("hideinfo", false);
+					this.$.infoText.textContent = "Sign up failed. A user with this email already exists";
+				}
+			},
+			onLoginClick:function()
+			{
+				if (!this.$.form.validate())
+					return;
+
+				this.submitFormToURL("ajax/login.php");
+			},
+			submitFormToURL:function(url)
+			{
+				var hashedPassword = hex_sha512(this.password);
+				this.set("password", hashedPassword);
+				this.set("passwordcheck", hashedPassword);
+				this.$.form.action = url;
+				this.$.form.submit();
+			},
+			onSignUpClick:function()
+			{
+				//show the user the 2nd password field
+				if (this.hidepasswordcheck)
+				{
+					this.set("hidepasswordcheck", false);
+					this.set("passwordcheck", "");
+					this.set("hideinfo", false);
+					this.$.loginButton.visible = false;
+					this.$.infoText.textContent = "Please press \"Sign Up\" again when you have filled out all the fields.";
+					return;
+				}
+				//email & password must have been filled out
+				if (!this.$.form.validate())
+					return;
+				//passwords must match
+				if (this.password != this.passwordcheck)
+				{
+					this.$.passwordCheck.invalid = true;
+					return;
+				}
+
+				this.submitFormToURL("ajax/sign-up.php");
+			},
+			onForgotPasswordClick:function(event)
+			{
+
+			},
+			onEnterKeyPressed:function()
+			{
+				//if the password confirmation input is showing, that means the user is trying to sign up, else they're logging in
+				if (this.hidepasswordcheck)
+					this.onLoginClick();
+				else
+					this.onSignUpClick();
+			}
+		});
+	</script>
+</dom-module>

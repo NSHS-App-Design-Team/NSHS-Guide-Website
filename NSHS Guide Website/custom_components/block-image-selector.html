@@ -1,0 +1,98 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../functions/block-color.html">
+<link rel="import" href="block-image.html">
+
+<dom-module id="block-image-selector">
+	<template>
+		<style>
+			#host
+			{
+				margin: 16px;
+			}
+			.blockLetterRow
+			{
+				text-align: center;
+				display: block;
+				margin-bottom: 8px;
+			}
+			.blockLetterRow:last-child
+			{
+				margin-bottom: 0;
+			}
+			block-image:first-child
+			{
+				margin-left: 0;
+			}
+			block-image
+			{
+				display: inline-block;
+				margin-left: 8px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<div id="host">
+			<div class="blockLetterRow">
+				<block-image blockletter="A" faded="true"></block-image>
+				<block-image blockletter="B" faded="true"></block-image>
+				<block-image blockletter="C" faded="true"></block-image>
+			</div>
+			<div class="blockLetterRow">
+				<block-image blockletter="D" faded="true"></block-image>
+				<block-image blockletter="E" faded="true"></block-image>
+				<block-image blockletter="F" faded="true"></block-image>
+			</div>
+			<div class="blockLetterRow">
+				<block-image blockletter="G" faded="true"></block-image>
+				<block-image blockletter="HR" faded="true"></block-image>
+				<block-image blockletter="J" faded="true"></block-image>
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'block-image-selector',
+			properties:
+			{
+				selectedblockletter:
+				{
+					type:String,
+					observer:"colorBlockImages",
+					notify:true
+				}
+			},
+			behaviors:[BlockColor.Behavior],
+			ready:function()
+			{
+				this.setBlockImageListeners();
+			},
+			setBlockImageListeners:function()
+			{
+				//can't use "forEachBlockImage" because "onBlockLetterClicked", the onClickListener, uses functions that require using "this"
+				var blockImages = this.querySelectorAll("block-image");
+				for (var i = 0; i < blockImages.length; i++)
+					this.listen(blockImages[i], "click", "onBlockLetterClicked");
+			},
+			colorBlockImages:function(newBlockLetter, oldBlockLetter)
+			{
+				var blockImages = this.querySelectorAll("block-image");
+				for (var i = 0; i < blockImages.length; i++)
+				{
+					var blockImage = blockImages[i];
+
+					//fade the old selected blockImage, unfade the new one
+					if (blockImage.blockletter == newBlockLetter)
+						blockImage.faded = false;
+					else if (blockImage.blockletter == oldBlockLetter)
+						blockImage.faded = true;
+				}
+			},
+			onBlockLetterClicked:function(event)
+			{
+				this.set("selectedblockletter", event.toElement.blockletter);
+			}
+		});
+	</script>
+</dom-module>

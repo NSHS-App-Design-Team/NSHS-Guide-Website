@@ -1,0 +1,72 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+
+<dom-module id="index-section">
+	<template>
+		<style>
+			:host
+			{
+				display: block;
+				text-align: center;
+				height: 100vh;
+				width: 100%;
+				color: white;
+			}
+			.image
+			{
+				margin-top: 10%;
+				height: 25%;
+				width: auto;
+			}
+			.title
+			{
+				@apply(--paper-font-display2);
+				opacity: var(--light-primary-opacity);
+				font-weight: 200 !important;
+			}
+			.description
+			{
+				@apply(--paper-font-display1);
+				opacity: var(--light-secondary-opacity);
+				font-weight: 200 !important;
+
+				padding-right: 10%;
+				padding-left: 10%;
+			}
+			.title, .description
+			{
+				padding-top: 16px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<img hidden$="[[!image]]" src="[[image]]" class="image">
+		<div hidden$="[[!title]]" class="title">[[title]]</div>
+		<div hidden$="[[!description]]" class="description">[[description]]</div>
+		<content></content>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'index-section',
+			properties:
+			{
+				image:
+				{
+					type: String,
+					value: ''
+				},
+				title:
+				{
+					type: String,
+					value: ''
+				},
+				description:
+				{
+					type: String,
+					value: ''
+				}
+			}
+		});
+	</script>
+</dom-module>

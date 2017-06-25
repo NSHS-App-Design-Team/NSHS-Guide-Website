@@ -1,0 +1,118 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/iron-form/iron-form.html">
+<link rel="import" href="../bower_components/iron-a11y-keys/iron-a11y-keys.html">
+<script src="../functions/sha512.js"></script>
+
+<dom-module id="account-settings-container">
+	<template>
+		<style>
+			:host
+			{
+				float: right;
+				width: 25%;
+				color: white;
+				text-align: center;
+			}
+			paper-input
+			{
+				width: 100%;
+				float: right;
+				clear: both;
+				text-align: left;
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+			}
+			#change-password-text
+			{
+				@apply(--paper-font-headline);
+				opacity: var(--light-primary-opacity);
+			}
+			#infoText
+			{
+				@apply(--paper-font-body2);
+				opacity: var(--light-primary-opacity);
+				color: var(--accent-color);
+			}
+			#submit-button
+			{
+				margin-top: 32px;
+				background: white;
+				color: var(--default-primary-color);
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/user-info.php" handle-as="json" last-response="{{userinfo}}"></iron-ajax>
+		<div id="change-password-text">Change your password</div>
+		<div id="infoText" hidden$="{{hideinfo}}"></div>
+		<form is="iron-form" method="post" action="../ajax/change-password.php" on-iron-form-response="formResponse" id="form">
+			<paper-input label="Current Password" name="currentPassword" type="password" value="{{currentPassword}}" error-message="Please enter your current password" required></paper-input>
+			<paper-input label="New Password" name="newPassword" type="password" value="{{newPassword}}" error-message="Please enter your new password" required></paper-input>
+		</form>
+		<paper-input label="Confirm New Password" id="newPasswordCheck" type="password" value="{{newPasswordCheck}}" error-message="Please enter your new password again" required></paper-input>
+		<paper-button id="submit-button" on-click="onSubmitClick" raised>Submit</paper-button>
+		<!-- listen for enter click -->
+		<iron-a11y-keys keys="enter" on-keys-pressed="onSubmitClick"></iron-a11y-keys>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'account-settings-container',
+			properties:
+			{
+				hideinfo:
+				{
+					type:Boolean,
+					value:true
+				},
+				userinfo:
+				{
+					observer:"onUserInfoChanged"
+				}
+			},
+			//if the user not logged in, go back to the index page
+			onUserInfoChanged:function()
+			{
+				if (!this.userinfo.loggedIn)
+					location.href = "index.html";
+			},
+			onSubmitClick:function()
+			{
+				if (!this.hideinfo)
+					this.set("hideinfo", true);
+				if (!this.$.form.validate())
+					return;
+				if (this.newPassword != this.newPasswordCheck)
+				{
+					this.$.newPasswordCheck.invalid = true;
+					return;
+				}
+
+				this.$.newPasswordCheck.invalid = false;
+				var hashedCurrentPassword = hex_sha512(this.currentPassword);
+				this.set("currentPassword", hashedCurrentPassword);
+				var hashedNewPassword = hex_sha512(this.newPassword);
+				this.set("newPassword", hashedNewPassword);
+				this.set("newPasswordCheck", hashedNewPassword);
+				this.$.form.submit();
+			},
+			formResponse:function(event)
+			{
+				var success = event.detail.response;
+				if (success)
+					this.$.infoText.textContent = "Password changed successfully";
+				else
+					this.$.infoText.textContent = "Current Password does not match saved password";
+
+				this.set("hideinfo", false);
+				this.set("currentPassword", "");
+				this.set("newPassword", "");
+				this.set("newPasswordCheck", "");
+			}
+		});
+	</script>
+</dom-module>

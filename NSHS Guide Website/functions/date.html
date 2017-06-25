@@ -1,0 +1,91 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<script>
+	const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+	var Date = Date || {};
+
+	Date.Behavior = {
+		/**
+		 * Returns a Date object formatted from a date string inputted by the user
+		 * @param dateString {string} String in format yyyy-mm-dd
+		 * @return {Date}
+		 */
+		dateFromString:function(dateString)
+		{
+			var split = dateString.split("-");
+			var year = split[0];
+			var month = split[1] - 1;   //Date object accepts months from 0 ~ 11, user sees 1 ~ 12
+			var day = split[2];
+			return new Date(year, month, day);
+		},
+		/**
+		 * Returns a formatted string from a Date object
+		 * @param date {Date}
+		 * @return {string} String in format yyyy-mm-dd
+		 */
+		stringFromDate:function(date)
+		{
+			var month = (date.getMonth() + 1) + "";     //convert month from 0~11 to 1~12, turn into a string
+			if (month.length < 2)
+				month = "0" + month;  //add 0 before a single digit month (Ex: "3" = "03"), same for day
+			var day = date.getDate() + "";
+			if (day.length < 2)
+				day = "0" + day;
+			return date.getFullYear() + "-" + month + "-" + day;
+		},
+		/**
+		 * Returns the start of the current school year as a string
+		 * @returns {string} Start of the school year, on August 1st
+		 */
+		startOfSchoolYear:function()
+		{
+			var now = new Date();
+			var year = now.getFullYear();
+			//if the current month is before August, the school year started last year & isn't over yet
+			if (now.getMonth() < 7)
+				year -= 1;
+			return year + "-08-01";
+		},
+		/**
+		 * Returns the end of the current school year as a string
+		 * @returns {string} End of the school year, on August 1st
+		 */
+		endOfSchoolYear:function()
+		{
+			var now = new Date();
+			var year = now.getFullYear();
+			//if the current month is during or after August, a new school year is starting
+			if (now.getMonth() >= 7)
+				year += 1;
+			return year + "-08-01";
+		},
+		/**
+		 * Turns a date into readable text in format "dayOfWeek, day/month"
+		 * @param date {Date}
+		 * @returns {string} Readable text
+		 */
+		getDateText:function(date)
+		{
+			return days[date.getDay()] + ", " + (date.getMonth() + 1) + "/" + date.getDate();
+		},
+		/**
+		 * Returns day of week of date (Ex: Sunday)
+		 * @param date {Date}
+		 * @returns {string}
+		 */
+		getDayOfWeekFromDate:function(date)
+		{
+			return days[date.getDay()];
+		},
+		/**
+		 * Returns number of days between two dates (will be negative if end date is larger)
+		 * @param startDate {Date}
+		 * @param endDate {Date}
+		 * @returns {int}
+		 */
+		daysBetweenDates:function(startDate, endDate)
+		{
+			const millisecondsPerDay = 24 * 60 * 60 * 1000;
+			return (endDate - startDate) / millisecondsPerDay;
+		}
+	};
+</script>

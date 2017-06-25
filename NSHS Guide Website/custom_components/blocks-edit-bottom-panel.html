@@ -1,0 +1,209 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-radio-group/paper-radio-group.html">
+<link rel="import" href="../bower_components/paper-radio-button/paper-radio-button.html">
+<link rel="import" href="../bower_components/paper-checkbox/paper-checkbox.html">
+<link rel="import" href="block-image-selector.html">
+<link rel="import" href="../functions/time.html">
+<link rel="import" href="../functions/block.html">
+
+<dom-module id="blocks-edit-bottom-panel">
+	<template>
+		<style>
+			:host
+			{
+				position: fixed;
+				bottom: 0;
+				left: 0;
+				height: 280px;
+				width: 100%;
+				display: table;
+				background-color: var(--primary-color);
+				box-shadow: 0 -8px 10px 1px rgba(0, 0, 0, 0.08);
+			}
+			:host > div
+			{
+				display: table-cell;
+				padding: 8px 16px 16px;
+				vertical-align: top;
+			}
+			paper-input
+			{
+				text-align: left;
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+			}
+			paper-radio-group
+			{
+				display: block;
+			}
+			paper-radio-button
+			{
+				--paper-radio-button-checked-color: var(--accent-color);
+				--paper-radio-button-checked-ink-color: var(--accent-color);
+				display: block;
+			}
+			paper-checkbox
+			{
+				--paper-checkbox-checked-color: var(--accent-color);
+				--paper-checkbox-checked-ink-color: var(--accent-color);
+				display: block;
+				margin-top: 16px;
+			}
+			.smallInput
+			{
+				max-width: 130px;
+			}
+			.lunchTimeContainer
+			{
+				color: white;
+			}
+			.lunchTimeContainer > paper-input
+			{
+				display: inline-block;
+				margin-left: 16px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<div>
+			<block-image-selector selectedblockletter="{{block.letter}}" on-click="onBlockImageSelected"></block-image-selector>
+			<paper-input id="customBlockInput" label="Custom block name" value="{{block.customBlockName}}" on-focus="onCustomBlockNameFocused"></paper-input>
+		</div>
+		<div>
+			<paper-radio-group selected="{{block.num}}">
+				<paper-radio-button name="1">1</paper-radio-button>
+				<paper-radio-button name="2">2</paper-radio-button>
+				<paper-radio-button name="3">3</paper-radio-button>
+				<paper-radio-button name="4">4</paper-radio-button>
+				<paper-radio-button name="0">No block number</paper-radio-button>
+			</paper-radio-group>
+		</div>
+		<div>
+			<paper-input class="smallInput" label="Start time" value="{{block.startTime}}" type="time" always-float-label on-change="calculateLunchTimes"></paper-input>
+			<paper-input class="smallInput" label="End time" value="{{block.endTime}}" type="time" always-float-label on-change="calculateLunchTimes"></paper-input>
+		</div>
+		<div>
+			<paper-checkbox checked="{{block.isLunch}}" on-change="calculateLunchTimes">Lunch block</paper-checkbox>
+			<paper-checkbox checked="{{hascustomlunchtimes}}" hidden$="[[!block.isLunch]]" on-click="onHasCustomLunchTimesChanged">Use custom lunch times</paper-checkbox>
+			<div class="lunchTimeContainer" hidden$="[[!block.isLunch]]">
+				1<sup>st</sup> lunch
+				<paper-input id="firstLunchStartInput" class="smallInput" disabled="true" label="Start time" value="[[block.startTime]]" type="time" always-float-label></paper-input>
+				<paper-input id="firstLunchEndInput" class="smallInput" disabled="{{!hascustomlunchtimes}}" label="End time" value="{{block.customLunchTimes.firstLunchEnd}}" type="time" always-float-label></paper-input>
+			</div>
+			<div class="lunchTimeContainer" hidden$="[[!block.isLunch]]">
+				2<sup>nd</sup> lunch
+				<paper-input id="secondLunchStartInput" class="smallInput" disabled="{{!hascustomlunchtimes}}" label="Start time" value="{{block.customLunchTimes.secondLunchStart}}" type="time" always-float-label></paper-input>
+				<paper-input id="secondLunchEndInput" class="smallInput" disabled="{{!hascustomlunchtimes}}" label="End time" value="{{block.customLunchTimes.secondLunchEnd}}" type="time" always-float-label></paper-input>
+			</div>
+			<div class="lunchTimeContainer" hidden$="[[!block.isLunch]]">
+				3<sup>rd</sup> lunch
+				<paper-input id="thirdLunchStartInput" class="smallInput" disabled="{{!hascustomlunchtimes}}" label="Start time" value="{{block.customLunchTimes.thirdLunchStart}}" type="time" always-float-label></paper-input>
+				<paper-input id="thirdLunchEndInput" class="smallInput" disabled="true" label="End time" value="[[block.endTime]]" type="time" always-float-label></paper-input>
+			</div>
+		</div>
+	</template>
+	<script>
+		const LUNCH_LENGTH = 30;
+
+		Polymer
+		({
+			is: 'blocks-edit-bottom-panel',
+			properties:
+			{
+				block:
+				{
+					type:Block,
+					notify:true,
+					observer:"onBlockSet"
+				},
+				blockindex:
+				{
+					type:Number,
+					notify:true
+				},
+				hascustomlunchtimes:
+				{
+					type:Boolean,
+					value:false
+				}
+			},
+			behaviors:[Time.Behavior, Block.Behavior],
+			isFirstBlock:function(blockIndex)
+			{
+				return blockIndex == 0;
+			},
+			onCustomBlockNameFocused:function()
+			{
+				//custom blocks have a block letter of "S"
+				this.set("block.letter", "S");
+			},
+			onBlockImageSelected:function()
+			{
+				//normal blocks do not have custom block names
+				this.set("block.customBlockName", "");
+			},
+			calculateLunchTimes:function()
+			{
+				if (!this.block.isLunch)
+					return;
+
+				const length = this.lengthOfBlock(this.block);
+				if (length == 105)
+					this.set("hascustomlunchtimes", false);
+				else
+					this.calculateCustomLunchTimesFromLength(length);
+			},
+			calculateCustomLunchTimesFromLength:function(blockLength)
+			{
+				var lunchLength, passingTime;
+
+				//if more than 90 minutes exist, try to divide the extraneous minutes up as passing time
+				if (blockLength > LUNCH_LENGTH * 3)
+				{
+					const extraMinutes = blockLength - LUNCH_LENGTH * 3;
+					//passing time = half of extra minutes, whole number (so check if divisible by 2 first)
+					passingTime = extraMinutes % 2 == 0 ? extraMinutes / 2 : (extraMinutes - 1) / 2;
+					lunchLength = LUNCH_LENGTH;
+				}
+				//if <= 90 minutes, divide whatever time we have by 3 for 3 lunches (no passing time)
+				else
+				{
+					if (blockLength % 3 != 0)    //make block length divisible by 3 first
+						blockLength -= (blockLength % 3);
+					lunchLength = blockLength / 3;
+					passingTime = 0;
+				}
+
+				const firstLunchStart = this.timeFromString(this.block.startTime);
+				const firstLunchEnd = this.addMinutesToTime(lunchLength, firstLunchStart);
+				const secondLunchStart = this.addMinutesToTime(passingTime, firstLunchEnd);
+				const secondLunchEnd = this.addMinutesToTime(lunchLength, secondLunchStart);
+				const thirdLunchStart = this.addMinutesToTime(passingTime, secondLunchEnd);
+				const customLunchTimes = new CustomLunchTimes
+					({firstLunchEnd:this.timeToString(firstLunchEnd),
+						secondLunchStart:this.timeToString(secondLunchStart),
+						secondLunchEnd:this.timeToString(secondLunchEnd),
+						thirdLunchStart:this.timeToString(thirdLunchStart)});
+				this.async(function(){this.set("block.customLunchTimes", customLunchTimes);});
+				if (!this.hascustomlunchtimes)
+					this.set("hascustomlunchtimes", true);
+			},
+			onBlockSet:function()
+			{
+				this.set("hascustomlunchtimes", this.block.customLunchTimes != null);
+				//find custom lunch times if none were saved
+				if (!this.hascustomlunchtimes)
+					this.calculateLunchTimes();
+			},
+			onHasCustomLunchTimesChanged:function()
+			{
+				if (!this.hascustomlunchtimes)
+					this.set("block.customLunchTimes", {});
+			}
+		});
+	</script>
+</dom-module>

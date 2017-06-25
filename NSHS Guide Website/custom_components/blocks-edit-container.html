@@ -1,0 +1,202 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-input/paper-input.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html"/>
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="authority-check.html">
+<link rel="import" href="blocks-edit-top-panel.html">
+<link rel="import" href="blocks-edit-bottom-panel.html">
+<link rel="import" href="block-image.html">
+<link rel="import" href="../functions/date.html">
+<link rel="import" href="../functions/block.html">
+<link rel="import" href="../functions/time.html">
+
+<dom-module id="blocks-edit-container">
+	<template>
+		<style>
+			#title > *
+			{
+				display: inline-block;
+				margin-left: 16px;
+			}
+			span
+			{
+				@apply(--paper-font-headline);
+				color: white;
+			}
+			paper-input
+			{
+				text-align: left;
+				--paper-input-container-color: white;
+				--paper-input-container-focus-color: white;
+				--paper-input-container-invalid-color: var(--accent-color);
+				--paper-input-container-input-color: white;
+			}
+			#dateInput
+			{
+				max-width: 150px;
+			}
+			#doneButton
+			{
+				background-color: var(--accent-color);
+				color: white;
+			}
+			paper-icon-button
+			{
+				color: var(--accent-color);
+			}
+			paper-dialog
+			{
+				--paper-dialog-background-color: white;
+				--paper-dialog-color: black;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax id="ajax" url="../ajax/set-special-schedule.php" handle-as="json" last-response="{{ajaxresponse}}"></iron-ajax>
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<div id="title">
+			<span>Special Schedule on</span>
+			<paper-input id="dateInput" type="date" value="[[stringFromDate(date)]]" on-change="onDateInputChanged" error-message="Date is out of range" min="[[startOfSchoolYear()]]" max="[[endOfSchoolYear()]]" always-float-label></paper-input>
+			<paper-button id="doneButton" raised="true" onclick="dialog.open()">Done</paper-button>
+		</div>
+		<blocks-edit-top-panel id="top" selectedblock="{{selectedblock}}" selectedindex="{{selectedindex}}" date="[[date]]"></blocks-edit-top-panel>
+		<blocks-edit-bottom-panel id="bottom" block="{{selectedblock}}" blockindex="[[selectedindex]]"></blocks-edit-bottom-panel>
+
+		<paper-toast id="toast" duration="Infinity">
+			<paper-icon-button icon="clear" onclick="toast.close()"></paper-icon-button>
+		</paper-toast>
+		<paper-dialog id="dialog" entry-animation="fade-in-animation">
+			<h2>Save the special schedule and send out notifications?</h2>
+			<div>
+				Make sure you're done editing the special schedule.
+			</div>
+			<div class="buttons">
+				<paper-button dialog-dismiss>Cancel</paper-button>
+				<paper-button on-click="onSaveClicked" dialog-confirm>Ok</paper-button>
+			</div>
+		</paper-dialog>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'blocks-edit-container',
+			properties:
+			{
+				authorized:
+				{
+					type:Boolean,
+					observer: "onAuthorizedChanged"
+				},
+				date:
+				{
+					type:Date,
+					value:function(){return new Date();}
+				},
+				animationConfig:
+				{
+					type: Object,
+					value: function()
+					{
+						return {
+							'entry': [{
+								name: 'slide-from-bottom-animation',
+								node: this.$.bottom}]
+						};
+					}
+				},
+				ajaxresponse:
+				{
+					type:Object,
+					observer:"onAjaxResponded"
+				}
+			},
+			behaviors: [Polymer.NeonAnimatableBehavior, Polymer.NeonAnimationRunnerBehavior, Date.Behavior, Block.Behavior, Time.Behavior],
+			ready:function()
+			{
+				this.playAnimation('entry');
+			},
+			onAuthorizedChanged:function()
+			{
+				if (!this.authorized)
+					location.href = "index.html";
+			},
+			onDateInputChanged:function(event)
+			{
+				var dateString = event.target.value;
+				var isCorrect = event.target.validate();    //validate the paper-input
+				if (isCorrect)
+					this.set("date", this.dateFromString(dateString));
+			},
+			onSaveClicked:function()
+			{
+				this.$.dialog.close();
+				this.$.toast.close();
+
+				const blocks = this.$.top.blocks;   //check for error where no blocks exist (can't save nothing)
+				if (blocks.length == 0)
+				{
+					this.showNoBlocksError();
+					return;
+				}
+
+				var blocksAsString = "";
+				var lastBlock = null;
+				for (var block of blocks)
+				{
+					console.log(JSON.stringify(block));
+					blocksAsString += this.blockToString(block) + "\n";
+
+					if (block.isLunch && this.lengthOfBlock(block) != 105 && this.customLunchTimesIsEmpty(block.customLunchTimes)) {
+						this.showErrorOfBlock(block, "Custom lunch times required");
+						return;
+					}
+					const error = this.getLunchTimesErrorOfBlock(block);    //check for error in custom lunch times
+					if (error !== "") {
+						this.showErrorOfBlock(block, error);
+						return;
+					}
+					if (this.lengthOfBlock(block) <= 0) {
+						this.showErrorOfBlock(block, "Block ends before it begins");
+						return;
+					}
+					if (lastBlock != null) {
+						if (this.timeFromBlockToBlock(lastBlock, block) < 0) {
+							this.showErrorOfBlock(block, "Block starts before previous block ends");
+							return;
+						}
+					}
+
+					lastBlock = block;
+				}
+				blocksAsString = blocksAsString.trim();  //remove last newline
+				const dateString = this.stringFromDate(this.date);
+
+				this.$.ajax.params = {date: dateString, schedule: blocksAsString};
+				this.$.ajax.generateRequest();
+			},
+			showErrorOfBlock:function(block, errorMessage)
+			{
+				this.$.toast.text = "Error in block " + block.letter + block.num + ": " + errorMessage;
+				this.$.toast.open();
+			},
+			showNoBlocksError:function()
+			{
+				this.$.toast.text = "No blocks have been entered";
+				this.$.toast.open();
+			},
+			onAjaxResponded:function()
+			{
+				if (this.ajaxresponse)
+					location.href = "blocks.html";
+			}
+		});
+	</script>
+</dom-module>

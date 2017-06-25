@@ -1,0 +1,118 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<script>
+	/**
+	 *
+	 * @param hour {number} 0-24
+	 * @param minute {number} 0-60
+	 * @constructor
+	 */
+	function Time({hour, minute})
+	{
+		this.hour = hour;
+		this.minute = minute;
+	}
+	Time.Behavior = {
+		/**
+		 * @param block {Block}
+		 * @returns {string} The readable start to end time for the block
+		 */
+		timeStringOfBlock:function(block)
+		{
+			return block.startTime + " ~ " + block.endTime;
+		},
+		/**
+		 * @param hour {number} Hour in 24hr format
+		 * @returns {number} Hour in 12hr format
+		 */
+		hour24To12:function(hour)
+		{
+			return hour > 12 ? hour - 12 : hour;
+		},
+		/**
+		 * @param time {Time}
+		 * @returns {string} Time as a string that paper-input can read
+		 */
+		timeToString:function(time)
+		{
+			return this.hourMinuteToString(time.hour, time.minute);
+		},
+		/**
+		 * @param hour {number}
+		 * @param minute {number}
+		 * @returns {string} Time as a string that paper-input can read
+		 */
+		hourMinuteToString:function(hour, minute)
+		{
+			return this.add2Leading0s(hour) + ":" + this.add2Leading0s(minute);
+		},
+		/**
+		 * @param input {string} Time as a string from paper-input in format HH:mm
+		 * @returns {Time}
+		 */
+		timeFromString:function(input)
+		{
+			const split = input.split(":");
+			return new Time({hour:parseInt(split[0]), minute:parseInt(split[1])});
+		},
+		/**
+		 * @param number {number}
+		 * @returns {string} The number as a string with zeros preceding it so that the number of digits = 2
+		 */
+		add2Leading0s:function(number)
+		{
+			var numString = number + "";
+			while (numString.length < 2)
+				numString = "0" + numString;
+			return numString;
+		},
+		/**
+		 * @param time {Time}
+		 * @returns {number} The time converted to minutes
+		 */
+		timeToMinutes:function(time)
+		{
+			return time.hour * 60 + time.minute;
+		},
+		/**
+		 * Takes in the minutes we wish to add to some time represented by hours and minutes, and returns the resultant
+		 * time.
+		 *
+		 * @param minutesToAdd {number} The number of minutes we want to add.
+		 * @param time {Time}
+		 * @returns {Time}
+		 */
+		addMinutesToTime:function(minutesToAdd, time)
+		{
+			return this.addMinutesToHourMinutes(minutesToAdd, time.hour, time.minute);
+		},
+		/**
+		 * Takes in the minutes we wish to add to some time represented by hours and minutes, and returns the resultant
+		 * time.
+		 *
+		 * @param minutesToAdd {number} The number of minutes we want to add.
+		 * @param hour {number} Hours (max 23)
+		 * @param minutes {number} Minutes (max 60)
+		 * @returns {Time}
+		 */
+		addMinutesToHourMinutes:function(minutesToAdd, hour, minutes)
+		{
+			var minutesTotal = hour * 60 + minutes;
+			minutesTotal += minutesToAdd;
+			const newMinutes = minutesTotal % 60;
+			const newHour = (minutesTotal - newMinutes) / 60;
+			return new Time({hour: newHour, minute: newMinutes});
+		},
+		/**
+		 * Returns difference between times. Note that if the 2nd time is smaller, the difference will be negative.
+		 * Also note that this does not work across days (1AM - 11PM = not 2)
+		 *
+		 * @param timeToSubtract {Time} The time that will be subtracted
+		 * @param time {Time} The time that will be subtracted from. Should be larger if difference is positive
+		 * @returns {number} Length of time in minutes from param1 to param2
+		 */
+		minutesFromTimeToTime:function(timeToSubtract, time)
+		{
+			return this.timeToMinutes(time) - this.timeToMinutes(timeToSubtract);
+		}
+	};
+</script>

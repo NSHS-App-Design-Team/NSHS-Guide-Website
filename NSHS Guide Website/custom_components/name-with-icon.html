@@ -1,0 +1,53 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+
+<dom-module id="name-with-icon">
+	<template>
+		<style>
+			:host
+			{
+				display: table-cell;
+				text-align: center;
+			}
+			div
+			{
+				margin-top: 16px;
+				font-weight: 200 !important;
+				opacity: var(--light-primary-opacity);
+			}
+			.image
+			{
+				border-radius: 100%;
+				width: 200px;
+				height: auto;
+			}
+			.name
+			{
+				@apply(--paper-font-headline);
+			}
+			.info, .years
+			{
+				@apply(--paper-font-subhead);
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<img src="[[image]]" class="image">
+		<div class="name">[[name]]</div>
+		<div class="info">[[info]]</div>
+		<div class="years">[[years]]</div>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'name-with-icon',
+			properties:
+			{
+				image: String,
+				name: String,
+				info: String,
+				years: String
+			}
+		});
+	</script>
+</dom-module>

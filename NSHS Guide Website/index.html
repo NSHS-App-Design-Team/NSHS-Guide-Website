@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+	<meta charset="UTF-8">
+	<script src="bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+	<link rel='shortcut icon' type='image/x-icon' href='img/favicon.ico' />
+	<link rel="import" href="bower_components/paper-styles/paper-styles.html">
+	<link rel="import" href="custom_components/nav-bar.html">
+	<link rel="import" href="custom_components/index-section.html">
+	<link rel="import" href="custom_components/name-with-icon.html">
+	<link rel="import" href="custom_components/announcement-container.html">
+	<link rel="stylesheet" href="style.css">
+	<title>NSHS Guide</title>
+
+	<style is="custom-style">
+		body
+		{
+			background-color: var(--dark-primary-color);
+		}
+		#index-logo
+		{
+			background-repeat: no-repeat;
+			background-position: center;
+			background-image: url('img/Feature-image-banner.png');
+			background-size: cover;
+			background-color: var(--default-primary-color);
+			height: 100vh;
+			width: auto;
+		}
+		.store-icon-button-container
+		{
+			margin-top: 5%;
+			width: 20%;
+		}
+		.store-icon
+		{
+			width: 100%;
+			height: auto;
+			margin-bottom: 10%;
+		}
+		.store-button
+		{
+			width: 60%;
+		}
+		.store-button img
+		{
+			width: inherit;
+			height: auto;
+		}
+	</style>
+</head>
+<body>
+	<div id="index-logo">
+		<nav-bar hideindexbutton="true"></nav-bar>
+	</div>
+	<index-section image="img/App-Icon.png" title="What is NSHS Guide?" description="A way for Newton South students to know where to go for their next block."></index-section>
+	<index-section title="See the absence list" description="So you know if a class was cancelled."></index-section>
+	<index-section title="See today's schedule" description="So you know what block comes next."></index-section>
+	<index-section title="Made for you">
+		<div class="layout-horizontal">
+			<div class="store-icon-button-container" style="margin-right: 10%">
+				<img src="img/App-Icon.png" class="store-icon"/>
+				<a href="https://play.google.com/store/apps/details?id=com.nshsappdesignteam.nshsguide" class="store-button">
+					<img src="img/Store-Android.svg"/>
+				</a>
+			</div>
+			<div class="store-icon-button-container">
+				<img src="img/App-Icon-iOS.png" class="store-icon"/>
+				<a href="http://itunes.apple.com/us/app/nshs-guide/id998228606?ls=1&mt=8" class="store-button">
+					<img src="img/Store-iOS.svg"/>
+				</a>
+			</div>
+		</div>
+	</index-section>
+	<index-section title="From App Design Team">
+		<div style="margin-top: 5%; display: table; width: 100%;">
+			<name-with-icon name="David Chu" image="img/developer-david.jpg" info="Founder/Mobile Developer" years="2014 - 2016"></name-with-icon>
+			<name-with-icon name="Eric Lin" image="img/developer-eric.jpg" info="Founder/Web Developer" years="2014 - 2015"></name-with-icon>
+			<name-with-icon name="Daniel Konviser" image="img/developer-daniel.jpg" info="Sous Chef" years="2014 - 2016"></name-with-icon>
+			<name-with-icon name="Sam Lee" image="img/developer-sam.jpg" info="Material Architect" years="2014 - 2016"></name-with-icon>
+		</div>
+	</index-section>
+	<announcement-container></announcement-container>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/paper-toast/paper-toast.html">
+<link rel="import" href="../bower_components/iron-icons/image-icons.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html"/>
+<link rel="import" href="authority-check.html">
+
+<dom-module id="blocks-edit-button">
+	<template>
+		<style>
+			#buttonsContainer
+			{
+				position: fixed;
+				right: 16px;
+				bottom: 0;
+			}
+			paper-fab
+			{
+				margin-bottom: 16px;
+				margin-left: auto;
+				margin-right: auto;
+			}
+			#specialScheduleButton
+			{
+				--paper-fab-background: var(--paper-yellow-700);
+			}
+			#noSchoolButton
+			{
+				--paper-fab-background: var(--paper-grey-700);
+			}
+			#undoButton
+			{
+				--paper-fab-background: var(--paper-red-700);
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<authority-check authorized="{{authorized}}"></authority-check>
+		<div id="buttonsContainer">
+			<paper-fab hidden="[[hidebuttons]]" id="specialScheduleButton" icon="star" on-click="onSpecialScheduleButtonClick" mini></paper-fab>
+			<paper-fab hidden="[[hidebuttons]]" id="noSchoolButton" icon="block" on-click="onNoSchoolButtonClick" mini></paper-fab>
+			<paper-fab hidden="[[hidebuttons]]" id="undoButton" icon="undo" on-click="onUndoButtonClick" mini></paper-fab>
+			<paper-fab hidden$="[[!authorized]]" id="editButton" icon="image:edit" on-click="onEditButtonClick"></paper-fab>
+
+			<paper-tooltip for="specialScheduleButton" position="left">Set special schedule</paper-tooltip>
+			<paper-tooltip for="noSchoolButton" position="left">Set no school days</paper-tooltip>
+			<paper-tooltip for="undoButton" position="left">Revert days to normal schedule</paper-tooltip>
+		</div>
+		<paper-toast id="toast" text="You do not have permission to edit the block schedule."></paper-toast>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'blocks-edit-button',
+			properties:
+			{
+				hidebuttons:
+				{
+					type:Boolean,
+					value:true
+				},
+				animationConfig:
+				{
+					type: Object,
+					value: function()
+					{
+						return {
+							'entry': [{
+								name: 'cascaded-animation',
+								nodes: [this.$.undoButton, this.$.noSchoolButton, this.$.specialScheduleButton],
+								animation: "scale-up-animation",
+								timing:{duration:300}}],
+							'exit': [{
+								name: 'cascaded-animation',
+								nodes: [this.$.specialScheduleButton, this.$.noSchoolButton, this.$.undoButton],
+								animation: "scale-down-animation",
+								timing:{duration:300}}]};
+					}
+				}
+			},
+			behaviors:[Polymer.NeonAnimatableBehavior, Polymer.NeonAnimationRunnerBehavior],
+			listeners: {'neon-animation-finish': 'onAnimationFinish'},
+			onEditButtonClick:function()
+			{
+				if (this.showUnauthorizedToast())
+					return;
+
+				//if buttons were hiding, show them; if they were showing, hide them
+				if (this.hidebuttons)
+				{
+					this.set("hidebuttons", false);
+					this.playAnimation("entry");
+					this.$.editButton.icon = "close";
+					this.$.editButton.customStyle["--paper-fab-background"] = "gray";
+				}
+				else
+				{
+					this.playAnimation("exit");
+					this.$.editButton.icon = "image:edit";
+					this.$.editButton.customStyle["--paper-fab-background"] = "var(--accent-color)";
+				}
+				this.$.editButton.updateStyles();
+			},
+			/**
+			 * Shows a toast if the user is unauthorized and also returns whether or not he/she is authorized
+			 * @returns {boolean} Whether or not the user is authorized
+			 */
+			showUnauthorizedToast:function()
+			{
+				if (this.authorized)
+					return false;
+				this.$.toast.open();
+				return true;
+			},
+			onAnimationFinish:function()
+			{
+				//hide the buttons if the last animation played was exit (which would also revert editButton's icon)
+				if (this.$.editButton.icon == "image:edit")
+					this.set("hidebuttons", true);
+			},
+			onSpecialScheduleButtonClick:function()
+			{
+				if (this.showUnauthorizedToast())
+					return;
+				location.href = "blocks-edit.html";
+			},
+			onNoSchoolButtonClick:function()
+			{
+				if (this.showUnauthorizedToast())
+					return;
+				location.href = "no-school-edit.html";
+			},
+			onUndoButtonClick:function()
+			{
+				if (this.showUnauthorizedToast())
+					return;
+				location.href = "revert-days-edit.html";
+			}
+		});
+	</script>
+</dom-module>

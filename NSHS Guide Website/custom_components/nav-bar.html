@@ -1,0 +1,77 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-button/paper-button.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="nav-bar">
+	<template>
+		<style>
+			paper-button
+			{
+				display: inline-block;
+				float: right;
+				color: white;
+				@apply(--paper-font-button);
+				margin-top: 16px;
+			}
+			#container
+			{
+				margin-right: 16px;
+			}
+			img
+			{
+				float: left;
+				height: auto;
+				width: 64px;
+				margin-left: 8px;
+				margin-top: 8px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<!-- NOTE: both username & loggedIn are stuffed into a single response since only 1 startSecureSession() call is
+					allowed per page. If we were to separate info into 2 php pages, both of which may call startSecureSession(),
+					the second call will fail. -->
+		<iron-ajax auto url="../ajax/user-info.php" handle-as="json" last-response="{{userinfo}}"></iron-ajax>
+		<div id="container">
+			<!-- this shows if you aren't logged in -->
+			<a hidden$="[[userinfo.loggedIn]]" href="../login.html">
+				<paper-button>Login</paper-button>
+			</a>
+			<!-- this shows if you are logged in -->
+			<div hidden$="[[!userinfo.loggedIn]]">
+				<a href="../ajax/logout.php">
+					<paper-button>Logout</paper-button>
+				</a>
+				<a href="../account-settings.html">
+					<paper-button>[[userinfo.email]]</paper-button>
+				</a>
+			</div>
+			<a href="../faculty.html">
+				<paper-button>Faculty</paper-button>
+			</a>
+			<a href="../blocks.html">
+				<paper-button>Blocks</paper-button>
+			</a>
+			<a href="../absent-teachers.html">
+				<paper-button>Absent teachers</paper-button>
+			</a>
+			<a hidden$="[[hideindexbutton]]" href="../index.html">
+				<img src="../img/App-Icon.png"/>
+			</a>
+		</div>
+	</template>
+	<script>
+		Polymer({
+			is: 'nav-bar',
+			properties:
+			{
+				hideindexbutton:
+				{
+					type: Boolean,
+					value: false
+				}
+			}
+		});
+	</script>
+</dom-module>

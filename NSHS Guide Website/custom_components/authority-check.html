@@ -1,0 +1,33 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+
+<dom-module id="authority-check">
+	<template>
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/user-info.php" handle-as="json" last-response="{{userinfo}}"></iron-ajax>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'authority-check',
+			properties:
+			{
+				authorized:
+				{
+					type:Boolean,
+					readOnly:true,
+					notify:true
+				},
+				userinfo:
+				{
+					observer:"onUserInfoChanged"
+				}
+			},
+			onUserInfoChanged:function()
+			{
+				//must use _setAuthorized instead of usual set since authorized is readOnly
+				this._setAuthorized(this.userinfo.loggedIn && this.userinfo.role == "Developer");
+			}
+		});
+	</script>
+</dom-module>

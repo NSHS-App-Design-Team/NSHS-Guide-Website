@@ -1,0 +1,120 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animatable-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animation-runner-behavior.html">
+<link rel="import" href="../bower_components/neon-animation/neon-animations.html"/>
+<link rel="import" href="block-image-with-time.html">
+<link rel="import" href="../functions/date.html">
+
+<dom-module id="blocks-container">
+	<template>
+		<style is="custom-style">
+			#host
+			{
+				margin: 16px;
+			}
+			#title
+			{
+				@apply(--paper-font-headline);
+				text-align: center;
+				color: white;
+			}
+			#blocksHolder
+			{
+				display: table;
+				width: 100%;
+				margin-top: 16px;
+			}
+			.blockHolder
+			{
+				display: table-cell;
+			}
+			#noSchoolContainer
+			{
+				text-align: center;
+				background-color: white;
+				border-radius: 100%;
+				width: 400px;
+				height: 400px;
+				margin: 16px auto auto;
+				box-shadow: inset 0 0 2px rgba(0,0,0,.12),inset 0 2px 4px rgba(0,0,0,.24);
+			}
+			#noSchoolText
+			{
+				@apply(--paper-font-headline);
+				margin-top: 16px;
+			}
+			#noSchoolImg
+			{
+				height: 80px;
+				width: auto;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/blocks-of-day.php" params="[[getAjaxParams(date)]]" handle-as="json" last-response="{{blocksofday}}"></iron-ajax>
+		<div id="host">
+			<div id="title">[[getTitle(date)]]</div>
+			<div id="blocksHolder">
+				<template is="dom-repeat" items="[[blocksofday]]" as="block">
+					<block-image-with-time class="blockHolder" block="[[block]]"></block-image-with-time>
+				</template>
+			</div>
+			<!-- EMPTY STATE -->
+			<div id="noSchoolContainer" hidden$="[[blocksofday]]">
+				<div style="position: relative; top: 35%;">
+					<img id="noSchoolImg" src="../img/empty-state-no-school.svg">
+					<div id="noSchoolText">No school</div>
+				</div>
+			</div>
+		</div>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'blocks-container',
+			properties:
+			{
+				date:
+				{
+					type:Date,
+					value:function(){return new Date();}
+				},
+				title:String,
+				blocksofday:
+				{
+					type:Array,
+					observer:"onBlocksOfDayUpdated"
+				},
+				animationConfig:
+				{
+					type: Object,
+					value: function()
+					{
+						return {'entry': [{name: 'cascaded-animation', animation: "scale-up-animation"}]};
+					}
+				}
+			},
+			behaviors:[Date.Behavior, Polymer.NeonAnimatableBehavior, Polymer.NeonAnimationRunnerBehavior],
+			getAjaxParams:function(date)
+			{
+				return {timeStamp:date.getTime() / 1000};
+			},
+			getTitle:function(date)
+			{
+				if (this.title == "")
+					return "Block Schedule for " + this.getDateText(date);
+				return this.title;
+			},
+			onBlocksOfDayUpdated:function()
+			{
+				this.async(function()
+				{
+					this.animationConfig['entry'][0].nodes = this.querySelectorAll('block-image-with-time');
+					this.playAnimation("entry");
+				});
+			}
+		});
+	</script>
+</dom-module>

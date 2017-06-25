@@ -1,0 +1,183 @@
+<link rel="import" href="../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/paper-styles/paper-styles.html">
+<link rel="import" href="../bower_components/paper-fab/paper-fab.html">
+<link rel="import" href="../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="block-image-with-time.html">
+<link rel="import" href="../functions/time.html">
+<link rel="import" href="../functions/block.html">
+
+<dom-module id="blocks-edit-top-panel">
+	<template>
+		<style>
+			:host
+			{
+				position: absolute;
+				margin-top: 16px;
+				width: 100%;
+			}
+			:host *
+			{
+				display: inline-block;
+				vertical-align: middle;
+			}
+			#blocksHolder
+			{
+				max-width: 80%;
+				overflow-x: auto;
+				overflow-y: hidden;
+				white-space: nowrap;
+			}
+			.blockHolder
+			{
+				display: inline-block;
+				margin-right: 16px;
+			}
+			paper-icon-button
+			{
+				display: block;
+				margin: auto;
+				color: var(--secondary-text-color);
+			}
+			paper-fab
+			{
+				margin-top: 56px;
+				margin-bottom: 56px;
+			}
+		</style>
+
+		<!-- CONTENTS GO HERE -->
+		<iron-ajax auto url="../ajax/blocks-of-day.php" params="[[getAjaxParams(date)]]" handle-as="json" last-response="{{normalblocks}}"></iron-ajax>
+		<div id="blocksHolder">
+			<template is="dom-repeat" items="{{blocks}}" as="block">
+				<div class="blockHolder">
+					<block-image-with-time block="[[block]]" on-click="onBlockImageClick"></block-image-with-time>
+					<paper-icon-button icon="clear" on-click="onClearBlockClick"></paper-icon-button>
+				</div>
+			</template>
+		</div>
+		<paper-fab icon="add" on-click="onAddClick"></paper-fab>
+	</template>
+	<script>
+		Polymer
+		({
+			is: 'blocks-edit-top-panel',
+			properties:
+			{
+				date:Date,
+				normalblocks:Array,
+				blocks:
+				{
+					type:Array,
+					value:[]
+				},
+				selectedblock:
+				{
+					type:Block,
+					notify:true
+				},
+				selectedindex:
+				{
+					type:Number,
+					notify:true
+				}
+			},
+			observers:["blockChanged(selectedblock.*)"],
+			behaviors:[Time.Behavior, Block.Behavior],
+			getAjaxParams:function(date)
+			{
+				return {timeStamp:date.getTime() / 1000};
+			},
+			/**
+			 * Puts a new block on the blocks array. Purposefully selects the block that would usually come after the
+			 * last block's block letter on this day of the week.
+			 *
+			 */
+			onAddClick:function()
+			{
+				var newBlock = this.nextBlockOnNormalDay();
+				this.push("blocks", newBlock);
+			},
+			/**
+			 * Returns the block that would normally come after the last one on the current list.
+			 * Calculation works like so:
+			 * 1. If no normal schedule exists for this day, return a dummy block
+			 * 2. Return the 1st block of the normal schedule if the current list is empty
+			 * 3. Find the block that normally comes after the last one on the current list, based on its block letter
+			 * 4. If no block is found, return 2.
+			 *
+			 * Note that blocks from this.normalblocks are recreated as new Block objects: new Block(this.normalblocks[0])
+			 * This prevents errors from reference pointing
+			 *
+			 * @returns {Block} Block, guaranteed to be not null
+			 */
+			nextBlockOnNormalDay:function()
+			{
+				if (this.normalblocks == null || this.normalblocks.length == 0)  //default to A1
+					return this.getDefaultBlock();
+				var firstBlock = new Block(this.normalblocks[0]);
+				if (this.blocks.length == 0)    //return the first block that would normally occur on this day
+					return firstBlock;
+
+				var lastBlock = this.blocks[this.blocks.length - 1];
+				var lastBlockLetter = lastBlock.letter;
+				//find the block that normally comes after this one
+				for (var i = 0; i < this.normalblocks.length; i++)
+					if (this.normalblocks[i].letter == lastBlockLetter)
+						if (this.normalblocks[i + 1] != null)   //return the next block
+							return this.adjustBlockTimeToAfterThisBlock(this.normalblocks[i + 1], lastBlock);
+				return this.adjustBlockTimeToAfterThisBlock(firstBlock, lastBlock);
+			},
+			/**
+			 * Returns a block with start time 5 min after previousBlock and identical length
+			 * @param block {Block} Block which will come next
+			 * @param previousBlock {Block}
+			 * @returns {Block} Block whose time is adjusted so it's the same length but begins 5 min after the previous block
+			 */
+			adjustBlockTimeToAfterThisBlock:function(block, previousBlock)
+			{
+				const previousBlockEnd = this.timeFromString(previousBlock.endTime);
+				const newStart = this.addMinutesToTime(5, previousBlockEnd);    //add passing time
+				const length = this.lengthOfBlock(block);   //length of block stays constant
+				const newEnd = this.addMinutesToTime(length, newStart);
+
+				var newBlock = new Block(block);
+				newBlock.startTime = this.timeToString(newStart);
+				newBlock.endTime = this.timeToString(newEnd);
+				return newBlock;
+			},
+			onBlockImageClick:function(event)
+			{
+				//store index & block that are selected, since even if selected block changes, the array doesn't know to update
+				this.set("selectedindex", event.model.index);
+				this.set("selectedblock", event.target.block);
+			},
+			blockChanged:function(changeRecord)
+			{
+				if (this.selectedindex == null || this.selectedblock == null)
+					return;
+				this.updateAllBlocks();
+			},
+			onClearBlockClick:function(event)
+			{
+				var index = event.model.index;
+				this.removeBlockAtIndex(index);
+				this.updateAllBlocks();
+
+				//deselect blocks to avoid erroneously pointing to the wrong block or calling blockChanged
+				this.set("selectedindex", null);
+				this.set("selectedblock", null);
+			},
+			updateAllBlocks:function()
+			{
+				var tempBlocks = this.splice("blocks", 0, this.blocks.length);  //remove everything & add them back
+				this.async(function() {this.set("blocks", tempBlocks);});
+			},
+			removeBlockAtIndex:function(index)
+			{
+				this.splice("blocks", index, 1);
+			}
+		});
+	</script>
+</dom-module>
