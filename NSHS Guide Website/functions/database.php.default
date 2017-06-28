@@ -1,0 +1,18 @@
+<?php
+	/**
+	 * Get a reference to the database to give to other functions as a parameter. Call as infrequently as possible
+	 * (store as local variable and reuse)
+	 *
+	 * @return mysqli Reference to the database
+	 */
+	function getMySQL()
+	{
+		define("HOST", "INSERT YOUR IP ADDRESS");     // The host you want to connect to.
+		define("USER", "INSERT YOUR DATABASE USER");    // The database username.
+		define("PASSWORD", "INSERT YOUR DATABASE PASSWORD");    // The database password. NEVER EXPOSE THIS TO THE PUBLIC
+		define("DATABASE", "INSERT YOUR DATABASE SCHEMA");    // The database name
+		define("CAN_REGISTER", "any");
+		define("SECURE", FALSE);    // FOR DEVELOPMENT ONLY!!!!
+
+		return mysqli_connect(HOST, USER, PASSWORD, DATABASE);
+	}

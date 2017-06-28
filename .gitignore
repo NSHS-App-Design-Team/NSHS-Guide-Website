@@ -1,6 +1,6 @@
 ﻿private_key.ppk
-map_pics
-bower_components
-database.php
-ck_development.pem
-ck_distribution.pem
+NSHS\ Guide\ Website/map_pics
+NSHS\ Guide\ Website/bower_components
+NSHS\ Guide\ Website/functions/database.php
+NSHS\ Guide\ Website/functions/ck_development.pem
+NSHS\ Guide\ Website/functions/ck_distribution.pem
